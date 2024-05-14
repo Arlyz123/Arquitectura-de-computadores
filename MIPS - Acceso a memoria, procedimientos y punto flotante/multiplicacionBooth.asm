@@ -1,71 +1,79 @@
 .data
-mensajeBase: .asciiz "Ingrese la base: "
-mensajeExponente: .asciiz "Ingrese el exponente: "
-mensajeError: .asciiz "Error: La base no puede ser negativa.\n"
+m:      .asciiz "\nmultiplicando: "
+m:      .asciiz "\nmultiplicador: "
+rpta:   .asciiz "\n\nresultado: "
 
 .text
 .globl main
-
 main:
-    # imprimir el mensaje de solicitud para la base
-    li $v0, 4
-    la $a0, mensajeBase
+    # reserva espacio en la pila para almacenar registros
+    addi $sp, $sp, -56
+    sw $s0, ($sp)
+    sw $s1, 4($sp)
+    sw $s2, 8($sp)
+    sw $s3, 12($sp)
+    sw $s4, 16($sp)
+    sw $s5, 20($sp)
+    sw $s6, 24($sp)
+    sw $t0, 28($sp)
+    sw $t1, 32($sp)
+    sw $t2, 36($sp)
+
+    # inicializacion de registros
+    move $s0, $zero
+    move $s3, $zero
+    move $s4, $zero
+    move $s5, $zero
+    move $s6, $zero
+
+    # solicitar y almacenar el multiplicador
+    li   $v0, 4           # cargar el servicio de impresion de cadena
+    la   $a0, m           # cargar la cadena "multiplicador: "
     syscall
-
-    # leer la base
-    li $v0, 5
+    li   $v0, 5           # cargar el servicio de entrada de entero
     syscall
-    move $t0, $v0   # guardar la base en $t0
+    move $a0, $v0         # almacenar el multiplicador en $a0
+    sw $a0, 40($sp)       # guardar el multiplicador en la pila
+    move $s1, $a0         # almacenar el multiplicador en $s1
 
-    # verificar si la base es negativa
-    bltz $t0, errorBase
-
-    # imprimir el mensaje de solicitud para el exponente
-    li $v0, 4
-    la $a0, mensajeExponente
+    # solicitar y almacenar el multiplicando
+    li   $v0, 4           # cargar el servicio de impresion de cadena
+    la   $a0, M           # cargar la cadena "multiplicando: "
     syscall
-
-    # leer el exponente
-    li $v0, 5
+    li   $v0, 5           # cargar el servicio de entrada de entero
     syscall
-    move $t1, $v0   # guardar el exponente en $t1
+    move $a1, $v0         # almacenar el multiplicando en $a1
+    sw $a1, 44($sp)       # guardar el multiplicando en la pila
+    move $s2, $a1         # almacenar el multiplicando en $s2
 
-    # llamar a la función para calcular la potencia
-    jal calcularPotencia
+    # bucle principal de multiplicacion
+_step:
+    # verificar si se han procesado todos los bits del multiplicador
+    beq  $s0, 32, save    # salir del bucle si se han procesado 32 bits
 
-    # imprimir el resultado
-    move $a0, $v0
-    li $v0, 1
-    syscall
+    # determinar el bit menos significativo (LSB) del multiplicador
+    andi $t0, $s1, 1      # obtener el LSB del multiplicador
+
+    # logica para decidir las operaciones en funcion del LSB
+    ...
+
+    # incrementar el contador de bits procesados
+    addi $s0, $s0, 1      # incrementar el contador de bits
+
+    # volver al inicio del bucle
+    j _step
+
+save:
+    # guardar el resultado en $t1 y $t2
+    add  $t1, $zero, $s3  # copiar $s3 al registro $t1
+    add  $t2, $zero, $s4  # copiar $s4 al registro $t2
+
+    # mostrar el resultado final
+    ...
+
+    # recuperar registros y liberar espacio en la pila
+    ...
 
     # salir del programa
-    li $v0, 10
+    li   $v0, 10          # cargar el servicio de salida
     syscall
-
-errorBase:
-    # imprimir el mensaje de error
-    li $v0, 4
-    la $a0, mensajeError
-    syscall
-
-    # salir del programa con error
-    li $v0, 10
-    syscall
-
-calcularPotencia:
-    # inicializar el resultado a 1
-    li $v0, 1       # $v0 = resultado inicial (1)
-
-    # multiplicar la base por sí misma según el exponente
-    move $t2, $t0   # $t2 = base ($t0)
-    move $t3, $t1   # $t3 = exponente ($t1)
-
-    buclePotencia:
-        beqz $t3, finBucle   # salir del bucle si exponente es 0
-        mul $v0, $v0, $t2    # multiplicar resultado por la base
-        subu $t3, $t3, 1     # decrementar el exponente
-        j buclePotencia
-
-    finBucle:
-        jr $ra   # retornar
-
